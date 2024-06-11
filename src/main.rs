@@ -1,6 +1,7 @@
 mod helper;
 
 use image::{self, guess_format, load_from_memory, DynamicImage, GenericImageView, ImageFormat};
+use regex::Regex;
 use reqwest;
 use std::error::Error;
 
@@ -24,8 +25,7 @@ fn main() {
     // } else {
     //     println!("{}", "NOPE u r dumb");
     // }
-    println!(
-        "{:?}",
-        helper::get_curl_content(&"https://wallhaven.cc/w/5gqmg7")
-    );
+    let data = helper::get_curl_content(&"https://wallhaven.cc/w/5gqmg7");
+    let link = helper::scrape_img_link(data.unwrap());
+    println!("{:?}", link);
 }
