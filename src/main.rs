@@ -1,3 +1,4 @@
+mod config;
 mod helper;
 
 use image::{self, guess_format, load_from_memory, DynamicImage, GenericImageView, ImageFormat};
@@ -25,7 +26,10 @@ fn main() {
     // } else {
     //     println!("{}", "NOPE u r dumb");
     // }
-    let data = helper::get_curl_content(&"https://wallhaven.cc/w/5gqmg7");
-    let link = helper::scrape_img_link(data.unwrap());
-    println!("{:?}", link);
+    // let data = helper::get_curl_content(&"https://wallhaven.cc/w/5gqmg7");
+    // let link = helper::scrape_img_link(data.unwrap());
+    // println!("{:?}", link);
+    let config: config::Config =
+        confy::load("rust-paper", "config").expect("Failed to load configuration");
+    println!("Config: {:?}", config);
 }

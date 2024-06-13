@@ -7,7 +7,10 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
+confy = "0.6.1"
 curl = "0.4.46"
 image = "0.25.1"
 regex = "1.10.5"
 reqwest = {version = "0.12.4", features = ["blocking"] }
+serde = { version = "1.0.203", features = ["derive"] }
+users = "0.11.0"
