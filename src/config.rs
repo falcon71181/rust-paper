@@ -1,11 +1,12 @@
-use confy;
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::default::Default;
+use std::fs::create_dir_all;
 use users::get_current_username;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    save_location: String,
+    pub save_location: String,
     integrity: bool,
 }
 
@@ -20,7 +21,7 @@ impl Default for Config {
         let save_location = format!("/home/{}/Pictures/wall", username);
 
         Config {
-            save_location: save_location,
+            save_location,
             integrity: true,
         }
     }
