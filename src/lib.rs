@@ -1,4 +1,5 @@
 mod config;
+mod lock;
 use anyhow::{anyhow, Result};
 use std::fs::{create_dir_all, OpenOptions};
 use std::io::{BufRead, BufReader};
