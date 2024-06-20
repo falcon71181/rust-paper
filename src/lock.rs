@@ -11,6 +11,9 @@ use users::get_current_username;
 #[derive(Debug, Serialize, Deserialize)]
 struct LockEntry {
     image_id: String,
+    width: u16,
+    height: u16,
+    image_format: String,
     sha256: String,
 }
 
@@ -35,7 +38,14 @@ impl LockFile {
         }
     }
 
-    pub fn add(&mut self, image_id: String, sha256: String) -> Result<()> {
+    pub fn add(
+        &mut self,
+        image_id: String,
+        width: u16,
+        height: u16,
+        image_format: String,
+        sha256: String,
+    ) -> Result<()> {
         let username = get_current_username()
             .ok_or_else(|| anyhow!("Failed to get username"))?
             .to_str()
@@ -51,7 +61,13 @@ impl LockFile {
 
         let writer = BufWriter::new(lock_file);
         serde_json::to_writer(writer, &self)?;
-        self.entries.push(LockEntry { image_id, sha256 });
+        self.entries.push(LockEntry {
+            image_id,
+            width,
+            height,
+            image_format,
+            sha256,
+        });
         Ok(())
     }
 

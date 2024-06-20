@@ -3,8 +3,7 @@ mod helper;
 mod lock;
 
 use anyhow::{anyhow, Result};
-use image::{self, DynamicImage, GenericImageView};
-use std::error::Error as StdError;
+use image::{self, DynamicImage};
 use std::fs::{create_dir_all, File};
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -30,6 +29,10 @@ impl RustPaper {
 
         if !Path::new(&config_folder).exists() {
             create_dir_all(&config_folder)?;
+        }
+
+        if !Path::new(&config.save_location).exists() {
+            create_dir_all(&config.save_location)?;
         }
 
         let wallpapers_list_file_location = format!("{}/wallpapers.lst", config_folder);
@@ -85,13 +88,9 @@ impl RustPaper {
     }
 }
 
-fn download_and_save(
-    curl_data: String,
-    id: &str,
-    save_location: &str,
-) -> Result<DynamicImage, Box<anyhow::Error>> {
+fn download_and_save(curl_data: String, id: &str, save_location: &str) -> Result<DynamicImage> {
     match helper::scrape_img_link(curl_data) {
         Ok(img_link) => helper::download_image(&img_link, id, save_location),
-        Err(e) => Err(Box::new(e)),
+        Err(e) => Err(anyhow!("{:?}", e)),
     }
 }

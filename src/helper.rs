@@ -1,9 +1,8 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Error, Result};
 use curl::easy::Easy;
 use image::{self, guess_format, load_from_memory, DynamicImage, GenericImageView, ImageFormat};
 use regex::Regex;
 use sha2::{digest::Update, Digest, Sha256};
-use std::error::Error;
 use std::{
     default::Default,
     fs::{File, OpenOptions},
@@ -82,14 +81,13 @@ pub fn calculate_sha256(file_path: &str) -> Result<String> {
     Ok(format!("{:x}", hasher.finalize()))
 }
 
-pub fn download_image(
-    url: &str,
-    id: &str,
-    save_location: &str,
-) -> Result<DynamicImage, Box<dyn Error>> {
-    let img_bytes = reqwest::blocking::get(url)?.bytes()?;
-    let img = load_from_memory(&img_bytes)?;
-    let img_format = guess_format(&img_bytes)?;
+pub fn download_image(url: &str, id: &str, save_location: &str) -> Result<DynamicImage> {
+    let img_bytes = reqwest::blocking::get(url)
+        .map_err(Error::new)?
+        .bytes()
+        .map_err(Error::new)?;
+    let img = load_from_memory(&img_bytes).map_err(Error::new)?;
+    let img_format = guess_format(&img_bytes).map_err(Error::new)?;
     let (width, height) = img.dimensions();
     println!("{:?} , {:?}, {:?}", width, height, img_format);
 
@@ -99,8 +97,10 @@ pub fn download_image(
         id,
         get_img_extension(&img_format)
     );
+    println!("{}", image_name);
 
-    img.save_with_format(image_name, img_format)?;
+    img.save_with_format(image_name, img_format)
+        .map_err(Error::new)?;
 
     Ok(img)
 }
