@@ -1,8 +1,15 @@
 use anyhow::{anyhow, Result};
 use curl::easy::Easy;
-use image::ImageFormat;
+use image::{self, guess_format, load_from_memory, DynamicImage, GenericImageView, ImageFormat};
 use regex::Regex;
-use std::io::Write;
+use sha2::{digest::Update, Digest, Sha256};
+use std::error::Error;
+use std::{
+    default::Default,
+    fs::{File, OpenOptions},
+    io::{BufReader, BufWriter, Read, Write},
+    path::Path,
+};
 
 pub fn get_img_extension(format: &ImageFormat) -> &str {
     match format {
@@ -55,4 +62,45 @@ pub fn scrape_img_link(curl_data: String) -> Result<String> {
         0 => Err(anyhow!("Unable to scrape img link")),
         _ => Ok(links.into_iter().next().unwrap()),
     }
+}
+
+pub fn calculate_sha256(file_path: &str) -> Result<String> {
+    if !Path::new(file_path).exists() {
+        return Err(anyhow!("File does not exist: {}", file_path));
+    }
+
+    let mut file = File::open(file_path)?;
+    let mut hasher = Sha256::new();
+    let mut buffer = [0; 1024];
+    loop {
+        let n = file.read(&mut buffer)?;
+        if n == 0 {
+            break;
+        }
+        Update::update(&mut hasher, &buffer[..n]);
+    }
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+pub fn download_image(
+    url: &str,
+    id: &str,
+    save_location: &str,
+) -> Result<DynamicImage, Box<dyn Error>> {
+    let img_bytes = reqwest::blocking::get(url)?.bytes()?;
+    let img = load_from_memory(&img_bytes)?;
+    let img_format = guess_format(&img_bytes)?;
+    let (width, height) = img.dimensions();
+    println!("{:?} , {:?}, {:?}", width, height, img_format);
+
+    let image_name = format!(
+        "{}/{}.{}",
+        save_location,
+        id,
+        get_img_extension(&img_format)
+    );
+
+    img.save_with_format(image_name, img_format)?;
+
+    Ok(img)
 }
