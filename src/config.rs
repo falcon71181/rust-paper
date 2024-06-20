@@ -1,7 +1,5 @@
-use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::default::Default;
-use std::fs::create_dir_all;
 use users::get_current_username;
 
 #[derive(Debug, Serialize, Deserialize)]

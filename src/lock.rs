@@ -1,10 +1,9 @@
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-use sha2::{digest::Update, Digest, Sha256};
 use std::{
     default::Default,
     fs::{File, OpenOptions},
-    io::{BufReader, BufWriter, Read},
+    io::{BufReader, BufWriter},
     path::Path,
 };
 use users::get_current_username;
@@ -54,24 +53,6 @@ impl LockFile {
         serde_json::to_writer(writer, &self)?;
         self.entries.push(LockEntry { image_id, sha256 });
         Ok(())
-    }
-
-    pub fn calculate_sha256(file_path: &str) -> Result<String> {
-        if !Path::new(file_path).exists() {
-            return Err(anyhow!("File does not exist: {}", file_path));
-        }
-
-        let mut file = File::open(file_path)?;
-        let mut hasher = Sha256::new();
-        let mut buffer = [0; 1024];
-        loop {
-            let n = file.read(&mut buffer)?;
-            if n == 0 {
-                break;
-            }
-            Update::update(&mut hasher, &buffer[..n]);
-        }
-        Ok(format!("{:x}", hasher.finalize()))
     }
 
     fn try_default() -> Result<Self> {
