@@ -53,6 +53,14 @@ impl LockFile {
             .to_string();
         let lock_file_location = format!("/home/{}/.config/rust-paper/wallpaper.lock", username);
 
+        self.entries.push(LockEntry {
+            image_id,
+            width,
+            height,
+            image_format,
+            sha256,
+        });
+
         let lock_file = OpenOptions::new()
             .create(true)
             .write(true)
@@ -61,13 +69,6 @@ impl LockFile {
 
         let writer = BufWriter::new(lock_file);
         serde_json::to_writer(writer, &self)?;
-        self.entries.push(LockEntry {
-            image_id,
-            width,
-            height,
-            image_format,
-            sha256,
-        });
         Ok(())
     }
 
@@ -86,7 +87,7 @@ impl LockFile {
             let lock_file: LockFile = serde_json::from_reader(buffer_reader)?;
             Ok(lock_file)
         } else {
-            Ok(LockFile::new())
+            Err(anyhow!(""))
         }
     }
 }
