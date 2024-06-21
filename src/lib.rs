@@ -4,7 +4,8 @@ mod lock;
 
 use anyhow::{anyhow, Result};
 use lock::LockFile;
-use std::fs::{create_dir_all, File};
+use std::ffi::OsStr;
+use std::fs::{create_dir_all, read_dir, File};
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 use users::get_current_username;
@@ -72,10 +73,48 @@ impl RustPaper {
 
     pub fn sync(&mut self) -> Result<()> {
         // TODO: make a progress bar
-        // TODO: check sha256 hash before downloading img to skip unneccessory download
+        // TODO: check sha256 hash before downloading img to skip unnecessary download
         let link_config: &str = "https://wallhaven.cc/w";
 
         for wallpaper in &self.wallpapers {
+            let mut image_exists = false;
+            let mut existing_image_path = String::new();
+
+            // Check if the image already exists in the save location
+            for entry in read_dir(&self.config.save_location)? {
+                let path = entry?.path();
+                if let Some(file_stem) = path.file_stem() {
+                    if file_stem == OsStr::new(wallpaper) {
+                        image_exists = true;
+                        existing_image_path = path.to_string_lossy().into_owned();
+                        break;
+                    }
+                }
+            }
+
+            if image_exists {
+                if self.config.integrity {
+                    let existing_image_sha256 = helper::calculate_sha256(&existing_image_path)?;
+                    if let Some(ref lock_file) = self.lock_file {
+                        if lock_file.contains(wallpaper, &existing_image_sha256) {
+                            println!(
+                                "   Skipping {}: already exists and integrity check passed",
+                                wallpaper
+                            );
+                            continue;
+                        } else {
+                            println!(
+                                "   Integrity check failed for {}: re-downloading",
+                                wallpaper
+                            );
+                        }
+                    }
+                } else {
+                    println!("   Skipping {}: already exists", wallpaper);
+                    continue;
+                }
+            }
+
             let wallhaven_img_link = format!("{}/{}", link_config, wallpaper.trim());
             match helper::get_curl_content(&wallhaven_img_link) {
                 Ok(curl_data) => {
@@ -86,7 +125,7 @@ impl RustPaper {
                                     let image_sha256 = helper::calculate_sha256(&image_location)?;
                                     let _ = lock_file.add(
                                         wallpaper.to_string(),
-                                        image_location,
+                                        image_location.clone(),
                                         image_sha256,
                                     );
                                 }
@@ -94,11 +133,13 @@ impl RustPaper {
                             println!("   Downloaded {}", wallpaper);
                         }
                         Err(e) => {
-                            eprintln!("   Failed {}: {:?}", wallpaper, e);
+                            eprintln!("   Failed to download and save {}: {:?}", wallpaper, e);
                         }
                     }
                 }
-                Err(e) => eprintln!(" 󰤫  Failed to get curl content for {}: {:?}", wallpaper, e),
+                Err(e) => {
+                    eprintln!(" 󰤫  Failed to get curl content for {}: {:?}", wallpaper, e);
+                }
             }
         }
         Ok(())

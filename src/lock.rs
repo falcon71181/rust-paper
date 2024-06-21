@@ -61,6 +61,12 @@ impl LockFile {
         Ok(())
     }
 
+    pub fn contains(&self, wallpaper: &str, hash: &str) -> bool {
+        self.entries
+            .iter()
+            .any(|entry| entry.image_id == wallpaper && entry.sha256 == hash)
+    }
+
     fn try_default() -> Result<Self> {
         let username = get_current_username()
             .ok_or_else(|| anyhow!("   Failed to get username"))?
@@ -76,7 +82,7 @@ impl LockFile {
             let lock_file: LockFile = serde_json::from_reader(buffer_reader)?;
             Ok(lock_file)
         } else {
-            Err(anyhow!(""))
+            Err(anyhow!("Lock file does not exist"))
         }
     }
 }
