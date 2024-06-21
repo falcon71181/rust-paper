@@ -4,6 +4,7 @@ mod lock;
 
 use anyhow::{anyhow, Result};
 use image::{self, DynamicImage};
+use lock::LockFile;
 use std::fs::{create_dir_all, File};
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -14,6 +15,7 @@ pub struct RustPaper {
     config_folder: String,
     wallpapers: Vec<String>,
     wallpapers_list_file_location: String,
+    lock_file: Option<LockFile>,
 }
 
 impl RustPaper {
@@ -55,11 +57,17 @@ impl RustPaper {
             let _ = File::create(&wallpapers_list_file_location)?;
         }
 
+        let mut lock_file: Option<LockFile> = None;
+        if config.integrity {
+            lock_file = Some(LockFile::default());
+        }
+
         Ok(Self {
             config,
             config_folder,
             wallpapers,
             wallpapers_list_file_location,
+            lock_file,
         })
     }
 
@@ -71,13 +79,23 @@ impl RustPaper {
             let wallhaven_img_link = format!("{}/{}", link_config, wallpaper.trim());
             match helper::get_curl_content(&wallhaven_img_link) {
                 Ok(curl_data) => {
-                    if let Err(e) =
-                        download_and_save(curl_data, wallpaper, &self.config.save_location)
-                    {
-                        eprintln!(
-                            "Failed to download and save wallpaper {}: {:?}",
-                            wallpaper, e
-                        );
+                    match download_and_save(curl_data, wallpaper, &self.config.save_location) {
+                        Ok(image_location) => {
+                            if self.config.integrity {
+                                let image_sha256 = helper::calculate_sha256(&image_location);
+                                self.lock_file.unwrap().add(
+                                    wallpaper,
+                                    image_location,
+                                    image_sha256,
+                                )?;
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to download and save wallpaper {}: {:?}",
+                                wallpaper, e
+                            );
+                        }
                     }
                 }
                 Err(e) => eprintln!("Failed to get curl content for {}: {:?}", wallpaper, e),
@@ -88,7 +106,7 @@ impl RustPaper {
     }
 }
 
-fn download_and_save(curl_data: String, id: &str, save_location: &str) -> Result<DynamicImage> {
+fn download_and_save(curl_data: String, id: &str, save_location: &str) -> Result<String> {
     match helper::scrape_img_link(curl_data) {
         Ok(img_link) => helper::download_image(&img_link, id, save_location),
         Err(e) => Err(anyhow!("{:?}", e)),

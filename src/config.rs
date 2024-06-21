@@ -7,7 +7,7 @@ use users::get_current_username;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub save_location: String,
-    integrity: bool,
+    pub integrity: bool,
 }
 
 impl Default for Config {

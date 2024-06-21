@@ -81,7 +81,7 @@ pub fn calculate_sha256(file_path: &str) -> Result<String> {
     Ok(format!("{:x}", hasher.finalize()))
 }
 
-pub fn download_image(url: &str, id: &str, save_location: &str) -> Result<DynamicImage> {
+pub fn download_image(url: &str, id: &str, save_location: &str) -> Result<String> {
     let img_bytes = reqwest::blocking::get(url)
         .map_err(Error::new)?
         .bytes()
@@ -97,10 +97,9 @@ pub fn download_image(url: &str, id: &str, save_location: &str) -> Result<Dynami
         id,
         get_img_extension(&img_format)
     );
-    println!("{}", image_name);
 
-    img.save_with_format(image_name, img_format)
+    img.save_with_format(&image_name, img_format)
         .map_err(Error::new)?;
 
-    Ok(img)
+    Ok(image_name)
 }
