@@ -3,7 +3,6 @@ mod helper;
 mod lock;
 
 use anyhow::{anyhow, Result};
-use image::{self, DynamicImage};
 use lock::LockFile;
 use std::fs::{create_dir_all, File};
 use std::io::{BufRead, BufReader};
@@ -73,6 +72,7 @@ impl RustPaper {
 
     pub fn sync(&mut self) -> Result<()> {
         // TODO: make a progress bar
+        // TODO: check sha256 hash before downloading img to skip unneccessory download
         let link_config: &str = "https://wallhaven.cc/w";
 
         for wallpaper in &self.wallpapers {
@@ -82,12 +82,14 @@ impl RustPaper {
                     match download_and_save(curl_data, wallpaper, &self.config.save_location) {
                         Ok(image_location) => {
                             if self.config.integrity {
-                                let image_sha256 = helper::calculate_sha256(&image_location);
-                                self.lock_file.unwrap().add(
-                                    wallpaper,
-                                    image_location,
-                                    image_sha256,
-                                )?;
+                                if let Some(ref mut lock_file) = self.lock_file {
+                                    let image_sha256 = helper::calculate_sha256(&image_location)?;
+                                    let _ = lock_file.add(
+                                        wallpaper.to_string(),
+                                        image_location,
+                                        image_sha256,
+                                    );
+                                }
                             }
                         }
                         Err(e) => {
@@ -101,7 +103,6 @@ impl RustPaper {
                 Err(e) => eprintln!("Failed to get curl content for {}: {:?}", wallpaper, e),
             }
         }
-
         Ok(())
     }
 }
