@@ -20,11 +20,11 @@ pub struct RustPaper {
 impl RustPaper {
     pub fn new() -> Result<Self> {
         let config: config::Config = confy::load("rust-paper", "config")
-            .map_err(|e| anyhow!("Failed to load configuration: {}", e))?;
+            .map_err(|e| anyhow!("   Failed to load configuration: {}", e))?;
         let username = get_current_username()
-            .ok_or_else(|| anyhow!("Failed to get username"))?
+            .ok_or_else(|| anyhow!("   Failed to get username"))?
             .to_str()
-            .ok_or_else(|| anyhow!("Failed to convert username to string"))?
+            .ok_or_else(|| anyhow!("   Failed to convert username to string"))?
             .to_string();
         let config_folder = format!("/home/{}/.config/rust-paper", username);
 
@@ -47,7 +47,7 @@ impl RustPaper {
                 match line {
                     Ok(wallpaper) => wallpapers.push(wallpaper),
                     Err(e) => {
-                        eprintln!("Error reading line: {}", e);
+                        eprintln!("   Error reading line: {}", e);
                         break;
                     }
                 }
@@ -91,16 +91,14 @@ impl RustPaper {
                                     );
                                 }
                             }
+                            println!("   Downloaded {}", wallpaper);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to download and save wallpaper {}: {:?}",
-                                wallpaper, e
-                            );
+                            eprintln!("   Failed {}: {:?}", wallpaper, e);
                         }
                     }
                 }
-                Err(e) => eprintln!("Failed to get curl content for {}: {:?}", wallpaper, e),
+                Err(e) => eprintln!(" 󰤫  Failed to get curl content for {}: {:?}", wallpaper, e),
             }
         }
         Ok(())

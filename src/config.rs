@@ -13,9 +13,9 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         let username = get_current_username()
-            .expect("Failed to get username")
+            .expect("   Failed to get username")
             .to_str()
-            .expect("Failed to convert username to string")
+            .expect("   Failed to convert username to string")
             .to_string();
 
         let save_location = format!("/home/{}/Pictures/wall", username);
