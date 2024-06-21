@@ -38,9 +38,9 @@ impl LockFile {
 
     pub fn add(&mut self, image_id: String, image_location: String, sha256: String) -> Result<()> {
         let username = get_current_username()
-            .ok_or_else(|| anyhow!("Failed to get username"))?
+            .ok_or_else(|| anyhow!("   Failed to get username"))?
             .to_str()
-            .ok_or_else(|| anyhow!("Failed to convert username to string"))?
+            .ok_or_else(|| anyhow!("   Failed to convert username to string"))?
             .to_string();
         let lock_file_location = format!("/home/{}/.config/rust-paper/wallpaper.lock", username);
 
@@ -63,9 +63,9 @@ impl LockFile {
 
     fn try_default() -> Result<Self> {
         let username = get_current_username()
-            .ok_or_else(|| anyhow!("Failed to get username"))?
+            .ok_or_else(|| anyhow!("   Failed to get username"))?
             .to_str()
-            .ok_or_else(|| anyhow!("Failed to convert username to string"))?
+            .ok_or_else(|| anyhow!("   Failed to convert username to string"))?
             .to_string();
 
         let lock_file_location = format!("/home/{}/.config/rust-paper/wallpaper.lock", username);

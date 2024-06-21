@@ -44,7 +44,7 @@ pub fn get_curl_content(link: &str) -> Result<String> {
 
     match String::from_utf8(curl_data) {
         Ok(string) => Ok(string),
-        Err(_) => Err(anyhow!("Unable to curl web page")),
+        Err(_) => Err(anyhow!(" 󰪎  Unable to curl web page")),
     }
 }
 
@@ -58,14 +58,14 @@ pub fn scrape_img_link(curl_data: String) -> Result<String> {
     }
 
     match links.len() {
-        0 => Err(anyhow!("Unable to scrape img link")),
+        0 => Err(anyhow!("   Unable to scrape img link")),
         _ => Ok(links.into_iter().next().unwrap()),
     }
 }
 
 pub fn calculate_sha256(file_path: &str) -> Result<String> {
     if !Path::new(file_path).exists() {
-        return Err(anyhow!("File does not exist: {}", file_path));
+        return Err(anyhow!(" 󱀷  File does not exist: {}", file_path));
     }
 
     let mut file = File::open(file_path)?;
@@ -89,7 +89,6 @@ pub fn download_image(url: &str, id: &str, save_location: &str) -> Result<String
     let img = load_from_memory(&img_bytes).map_err(Error::new)?;
     let img_format = guess_format(&img_bytes).map_err(Error::new)?;
     let (width, height) = img.dimensions();
-    println!("{:?} , {:?}, {:?}", width, height, img_format);
 
     let image_name = format!(
         "{}/{}.{}",
