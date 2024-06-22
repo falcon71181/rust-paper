@@ -73,7 +73,7 @@ impl RustPaper {
 
     pub fn sync(&mut self) -> Result<()> {
         // TODO: make a progress bar
-        // TODO: check sha256 hash before downloading img to skip unnecessary download
+        // TODO: use multithreading inorder to make it fast
         let link_config: &str = "https://wallhaven.cc/w";
 
         for wallpaper in &self.wallpapers {

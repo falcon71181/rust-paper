@@ -1,12 +1,11 @@
 use anyhow::{anyhow, Error, Result};
 use curl::easy::Easy;
-use image::{self, guess_format, load_from_memory, DynamicImage, GenericImageView, ImageFormat};
+use image::{self, guess_format, load_from_memory, ImageFormat};
 use regex::Regex;
 use sha2::{digest::Update, Digest, Sha256};
 use std::{
-    default::Default,
-    fs::{File, OpenOptions},
-    io::{BufReader, BufWriter, Read, Write},
+    fs::File,
+    io::{Read, Write},
     path::Path,
 };
 
@@ -88,7 +87,7 @@ pub fn download_image(url: &str, id: &str, save_location: &str) -> Result<String
         .map_err(Error::new)?;
     let img = load_from_memory(&img_bytes).map_err(Error::new)?;
     let img_format = guess_format(&img_bytes).map_err(Error::new)?;
-    let (width, height) = img.dimensions();
+    // let (_width, _height) = img.dimensions();
 
     let image_name = format!(
         "{}/{}.{}",

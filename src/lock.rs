@@ -44,11 +44,20 @@ impl LockFile {
             .to_string();
         let lock_file_location = format!("/home/{}/.config/rust-paper/wallpaper.lock", username);
 
-        self.entries.push(LockEntry {
-            image_id,
-            image_location,
-            sha256,
-        });
+        if let Some(entry) = self
+            .entries
+            .iter_mut()
+            .find(|entry| entry.image_id == image_id)
+        {
+            entry.image_location = image_location;
+            entry.sha256 = sha256;
+        } else {
+            self.entries.push(LockEntry {
+                image_id,
+                image_location,
+                sha256,
+            });
+        }
 
         let lock_file = OpenOptions::new()
             .create(true)
@@ -61,10 +70,10 @@ impl LockFile {
         Ok(())
     }
 
-    pub fn contains(&self, wallpaper: &str, hash: &str) -> bool {
+    pub fn contains(&self, image_id: &str, hash: &str) -> bool {
         self.entries
             .iter()
-            .any(|entry| entry.image_id == wallpaper && entry.sha256 == hash)
+            .any(|entry| entry.image_id == image_id && entry.sha256 == hash)
     }
 
     fn try_default() -> Result<Self> {
