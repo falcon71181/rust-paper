@@ -6,7 +6,8 @@ use sha2::{digest::Update, Digest, Sha256};
 use std::{
     fs::File,
     io::{Read, Write},
-    path::Path,
+    path::{Path, PathBuf},
+    process::Command,
 };
 
 pub fn get_img_extension(format: &ImageFormat) -> &str {
@@ -100,4 +101,28 @@ pub fn download_image(url: &str, id: &str, save_location: &str) -> Result<String
         .map_err(Error::new)?;
 
     Ok(image_name)
+}
+
+pub fn get_home_location() -> String {
+    let utf8 = Command::new("sh")
+        .arg("-c")
+        .arg("echo $HOME")
+        .output()
+        .expect("failed to execute process");
+
+    let output = String::from_utf8(utf8.stdout)
+        .expect("Unable to get home location")
+        .trim_matches(&['\n', '\r'][..])
+        .to_string();
+
+    output
+}
+
+pub fn get_folder_path() -> PathBuf {
+    let path = confy::get_configuration_file_path("rust-paper", "config").unwrap();
+    if let Some(parent) = path.parent() {
+        parent.to_path_buf()
+    } else {
+        PathBuf::new()
+    }
 }

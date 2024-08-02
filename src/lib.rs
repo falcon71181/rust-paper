@@ -7,14 +7,13 @@ use lock::LockFile;
 use std::ffi::OsStr;
 use std::fs::{create_dir_all, read_dir, File};
 use std::io::{BufRead, BufReader};
-use std::path::Path;
-use users::get_current_username;
+use std::path::{Path, PathBuf};
 
 pub struct RustPaper {
     config: config::Config,
-    config_folder: String,
+    config_folder: PathBuf,
     wallpapers: Vec<String>,
-    wallpapers_list_file_location: String,
+    wallpapers_list_file_location: PathBuf,
     lock_file: Option<LockFile>,
 }
 
@@ -22,13 +21,8 @@ impl RustPaper {
     pub fn new() -> Result<Self> {
         let config: config::Config = confy::load("rust-paper", "config")
             .map_err(|e| anyhow!("   Failed to load configuration: {}", e))?;
-        let username = get_current_username()
-            .ok_or_else(|| anyhow!("   Failed to get username"))?
-            .to_str()
-            .ok_or_else(|| anyhow!("   Failed to convert username to string"))?
-            .to_string();
-        let config_folder = format!("/home/{}/.config/rust-paper", username);
 
+        let config_folder = helper::get_folder_path();
         if !Path::new(&config_folder).exists() {
             create_dir_all(&config_folder)?;
         }
@@ -37,7 +31,7 @@ impl RustPaper {
             create_dir_all(&config.save_location)?;
         }
 
-        let wallpapers_list_file_location = format!("{}/wallpapers.lst", config_folder);
+        let wallpapers_list_file_location = config_folder.join("wallpapers.lst");
         let mut wallpapers: Vec<String> = vec![];
 
         if Path::new(&wallpapers_list_file_location).exists() {
