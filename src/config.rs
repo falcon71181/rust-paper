@@ -3,7 +3,7 @@ use std::default::Default;
 
 use crate::helper;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub save_location: String,
     pub integrity: bool,

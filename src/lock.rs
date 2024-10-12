@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::{
     default::Default,
@@ -38,7 +38,9 @@ impl LockFile {
     }
 
     pub fn add(&mut self, image_id: String, image_location: String, sha256: String) -> Result<()> {
-        let lock_file_location = helper::get_folder_path().join("wallpaper.lock");
+        let lock_file_location = helper::get_folder_path()
+            .context("   Failed to get folder path")?
+            .join("wallpaper.lock");
 
         if let Some(entry) = self
             .entries
@@ -74,7 +76,9 @@ impl LockFile {
     }
 
     fn try_default() -> Result<Self> {
-        let lock_file_location = helper::get_folder_path().join("wallpaper.lock");
+        let lock_file_location = helper::get_folder_path()
+            .context("   Failed to get folder path")?
+            .join("wallpaper.lock");
 
         if Path::new(&lock_file_location).exists() {
             let lock_file = File::open(&lock_file_location)?;
@@ -82,7 +86,7 @@ impl LockFile {
             let lock_file: LockFile = serde_json::from_reader(buffer_reader)?;
             Ok(lock_file)
         } else {
-            Err(anyhow!("Lock file does not exist"))
+            Err(anyhow!("   Lock file does not exist"))
         }
     }
 }
