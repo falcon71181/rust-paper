@@ -2,6 +2,15 @@
 name = "rust-paper"
 version = "0.1.0"
 edition = "2021"
+categories = ["command-line-utilities", "parsing", "parser-implementations", "asynchronous", "no-std"]
+description = "Rust Wallpaper manager from ( https://wallhaven.cc/ ) for Linux/UNIX only"
+documentation = "https://github.com/falcon71181/rust-paper/blob/main/README.md"
+readme = "README.md"
+authors = ["falcon71181"]
+keywords = ["cli", "Wallpaper", "wallhaven", "Wallpaper-manager", "wall-paper"]
+repository = "https://github.com/falcon71181/rust-paper"
+license = "MIT"
+license-file = "LICENSE"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

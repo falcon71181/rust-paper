@@ -103,7 +103,7 @@ pub async fn download_image(url: &str, id: &str, save_location: &str) -> Result<
 pub fn get_home_location() -> String {
     dirs::home_dir()
         .map(|path| path.to_str().unwrap_or_default().to_string())
-        .unwrap_or_else(|| "${HOME}".to_string())
+        .unwrap_or_else(|| "~".to_string())
 }
 
 pub fn get_folder_path() -> Result<PathBuf> {
