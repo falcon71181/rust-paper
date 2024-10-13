@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::{
     default::Default,
@@ -6,7 +6,8 @@ use std::{
     io::{BufReader, BufWriter},
     path::Path,
 };
-use users::get_current_username;
+
+use crate::helper;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct LockEntry {
@@ -37,12 +38,9 @@ impl LockFile {
     }
 
     pub fn add(&mut self, image_id: String, image_location: String, sha256: String) -> Result<()> {
-        let username = get_current_username()
-            .ok_or_else(|| anyhow!("   Failed to get username"))?
-            .to_str()
-            .ok_or_else(|| anyhow!("   Failed to convert username to string"))?
-            .to_string();
-        let lock_file_location = format!("/home/{}/.config/rust-paper/wallpaper.lock", username);
+        let lock_file_location = helper::get_folder_path()
+            .context("   Failed to get folder path")?
+            .join("wallpaper.lock");
 
         if let Some(entry) = self
             .entries
@@ -67,6 +65,7 @@ impl LockFile {
 
         let writer = BufWriter::new(lock_file);
         serde_json::to_writer(writer, &self)?;
+
         Ok(())
     }
 
@@ -77,13 +76,9 @@ impl LockFile {
     }
 
     fn try_default() -> Result<Self> {
-        let username = get_current_username()
-            .ok_or_else(|| anyhow!("   Failed to get username"))?
-            .to_str()
-            .ok_or_else(|| anyhow!("   Failed to convert username to string"))?
-            .to_string();
-
-        let lock_file_location = format!("/home/{}/.config/rust-paper/wallpaper.lock", username);
+        let lock_file_location = helper::get_folder_path()
+            .context("   Failed to get folder path")?
+            .join("wallpaper.lock");
 
         if Path::new(&lock_file_location).exists() {
             let lock_file = File::open(&lock_file_location)?;
@@ -91,7 +86,7 @@ impl LockFile {
             let lock_file: LockFile = serde_json::from_reader(buffer_reader)?;
             Ok(lock_file)
         } else {
-            Err(anyhow!("Lock file does not exist"))
+            Err(anyhow!("   Lock file does not exist"))
         }
     }
 }
