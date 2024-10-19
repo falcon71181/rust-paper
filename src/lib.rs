@@ -37,11 +37,14 @@ impl RustPaper {
             confy::load("rust-paper", "config").context("   Failed to load configuration")?;
 
         let config_folder = helper::get_folder_path().context("   Failed to get folder path")?;
-        create_dir_all(&config_folder).await?;
-        create_dir_all(&config.save_location).await?;
+
+        tokio::try_join!(
+            create_dir_all(&config_folder),
+            create_dir_all(&config.save_location)
+        )?;
 
         let wallpapers_list_file_location = config_folder.join("wallpapers.lst");
-        let wallpapers = Self::load_wallpapers(&wallpapers_list_file_location).await?;
+        let wallpapers = load_wallpapers(&wallpapers_list_file_location).await?;
 
         let lock_file = Arc::new(Mutex::new(config.integrity.then(LockFile::default)));
 
@@ -54,42 +57,28 @@ impl RustPaper {
         })
     }
 
-    async fn load_wallpapers(file_path: &Path) -> Result<Vec<String>> {
-        if !file_path.exists() {
-            File::create(file_path).await?;
-            return Ok(vec![]);
-        }
-
-        let file = File::open(file_path).await?;
-        let reader = BufReader::new(file);
-        let mut lines = Vec::new();
-        let mut lines_stream = reader.lines();
-
-        while let Some(line) = lines_stream.next_line().await? {
-            lines.extend(helper::to_array(&line));
-        }
-
-        Ok(lines)
-    }
-
     pub async fn sync(&self) -> Result<()> {
-        let self_arc = Arc::new(self.clone());
+        let tasks: FuturesUnordered<_> = self
+            .wallpapers
+            .iter()
+            .map(|wallpaper| {
+                let config = self.config.clone();
+                let lock_file = Arc::clone(&self.lock_file);
+                let wallpaper = wallpaper.clone();
 
-        let mut tasks = FuturesUnordered::new();
+                tokio::spawn(
+                    async move { process_wallpaper(&config, &lock_file, &wallpaper).await },
+                )
+            })
+            .collect();
 
-        for wallpaper in &self.wallpapers {
-            let config = self_arc.config.clone();
-            let lock_file = Arc::clone(&self_arc.lock_file);
-            let wallpaper = wallpaper.clone();
-
-            tasks.push(tokio::spawn(async move {
-                process_wallpaper(&config, &lock_file, &wallpaper).await
-            }));
-        }
-
-        while let Some(result) = tasks.next().await {
-            result??;
-        }
+        tasks
+            .for_each(|result| async {
+                if let Err(e) = result.expect("Task panicked") {
+                    eprintln!("   Error processing wallpaper: {}", e);
+                }
+            })
+            .await;
 
         Ok(())
     }
@@ -99,12 +88,11 @@ impl RustPaper {
             .extend(new_wallpapers.iter().flat_map(|s| helper::to_array(s)));
         self.wallpapers.sort_unstable();
         self.wallpapers.dedup();
-        update_wallpaper_list(&self.wallpapers, &self.wallpapers_list_file_location).await?;
-        Ok(())
+        update_wallpaper_list(&self.wallpapers, &self.wallpapers_list_file_location).await
     }
 }
 
-async fn update_wallpaper_list(list: &Vec<String>, file_path: &Path) -> Result<()> {
+async fn update_wallpaper_list(list: &[String], file_path: &Path) -> Result<()> {
     let file = OpenOptions::new()
         .write(true)
         .create(true)
@@ -157,7 +145,7 @@ async fn process_wallpaper(
         return Err(anyhow::anyhow!("   API error: {}", error));
     }
 
-    let image_location = download_and_save(res, wallpaper, &config.save_location).await?;
+    let image_location = download_and_save(&res, wallpaper, &config.save_location).await?;
 
     if config.integrity {
         let mut lock_file = lock_file.lock().await;
@@ -169,6 +157,24 @@ async fn process_wallpaper(
 
     println!("   Downloaded {}", wallpaper);
     Ok(())
+}
+
+async fn load_wallpapers(file_path: &Path) -> Result<Vec<String>> {
+    if !file_path.exists() {
+        File::create(file_path).await?;
+        return Ok(vec![]);
+    }
+
+    let file = File::open(file_path).await?;
+    let reader = BufReader::new(file);
+    let mut lines = Vec::new();
+    let mut lines_stream = reader.lines();
+
+    while let Some(line) = lines_stream.next_line().await? {
+        lines.extend(helper::to_array(&line));
+    }
+
+    Ok(lines)
 }
 
 async fn find_existing_image(save_location: &Path, wallpaper: &str) -> Result<Option<PathBuf>> {
@@ -196,7 +202,7 @@ async fn check_integrity(
     }
 }
 
-async fn download_and_save(api_data: Value, id: &str, save_location: &str) -> Result<String> {
+async fn download_and_save(api_data: &Value, id: &str, save_location: &str) -> Result<String> {
     let img_link = api_data
         .get("data")
         .and_then(|data| data.get("path"))
@@ -206,21 +212,19 @@ async fn download_and_save(api_data: Value, id: &str, save_location: &str) -> Re
 }
 
 async fn retry_get_curl_content(url: &str) -> Result<String> {
-    let mut retry_count = 0;
-    loop {
+    for retry_count in 0..*MAX_RETRY {
         match helper::get_curl_content(url).await {
             Ok(content) => return Ok(content),
-            Err(e) => {
-                retry_count += 1;
-                if retry_count >= *MAX_RETRY {
-                    return Err(e);
-                }
+            Err(e) if retry_count + 1 < *MAX_RETRY => {
                 eprintln!(
-                    "   Error fetching content (attempt {}): {}. Retrying...",
-                    retry_count, e
+                    "Error fetching content (attempt {}): {}. Retrying...",
+                    retry_count + 1,
+                    e
                 );
                 sleep(Duration::from_secs(1)).await;
             }
+            Err(e) => return Err(e),
         }
     }
+    unreachable!()
 }
