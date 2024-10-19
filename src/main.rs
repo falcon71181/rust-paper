@@ -7,10 +7,6 @@ use rust_paper::RustPaper;
 
 #[derive(Parser)]
 struct Cli {
-    /// add wallpapers
-    // #[arg(short, long, value_parser)]
-    // add: Option<String>,
-
     #[clap(subcommand)]
     command: Command,
 }
@@ -19,6 +15,12 @@ struct Cli {
 enum Command {
     /// Sync wallpapers
     Sync,
+
+    /// add wallpapers
+    Add {
+        #[arg(required = true)]
+        paths: Vec<String>,
+    },
 }
 
 #[tokio::main]
@@ -27,14 +29,19 @@ async fn main() -> Result<(), Error> {
     let cli = Cli::parse();
 
     // Initialize RustPaper
-    let rust_paper = RustPaper::new().await?;
+    let mut rust_paper = RustPaper::new().await?;
 
     match cli.command {
         Command::Sync => {
             // Call the sync method
             rust_paper.sync().await?;
         }
+        Command::Add { paths } => {
+            rust_paper.add(&paths).await?;
+        }
     }
 
+    // let gg = helper::get_curl_content("https://wallhaven.cc/api/v1/w/3lgk6y").await?;
+    // eprintln!("DEBUGPRINT[1]: main.rs:44: gg={:#?}", gg);
     Ok(())
 }

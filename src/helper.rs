@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Context, Error, Result};
 use image::{self, guess_format, load_from_memory, ImageFormat};
-use regex::Regex;
 use reqwest::Client;
 use sha2::{Digest, Sha256};
 use std::{
@@ -8,10 +7,6 @@ use std::{
     path::{Path, PathBuf},
 };
 use tokio::{fs::File, io::AsyncReadExt};
-
-lazy_static::lazy_static! {
-    static ref IMG_REGEX: Regex = Regex::new(r#"<img[^>]*id="wallpaper"[^>]*src="([^">]+)""#).unwrap();
-}
 
 pub fn get_img_extension(format: &ImageFormat) -> &'static str {
     let extensions: HashMap<ImageFormat, &'static str> = [
@@ -42,14 +37,6 @@ pub async fn get_curl_content(link: &str) -> Result<String> {
     let body = response.text().await?;
 
     Ok(body)
-}
-
-pub async fn scrape_img_link(curl_data: &str) -> Result<String> {
-    IMG_REGEX
-        .captures(curl_data)
-        .and_then(|cap| cap.get(1))
-        .map(|m| m.as_str().to_string())
-        .ok_or_else(|| anyhow!("   Unable to scrape img link"))
 }
 
 pub async fn calculate_sha256(file_path: impl AsRef<Path>) -> Result<String> {
