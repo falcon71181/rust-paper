@@ -114,3 +114,12 @@ pub fn get_folder_path() -> Result<PathBuf> {
         Ok(PathBuf::new())
     }
 }
+
+pub fn to_array(comma_separated_values: &str) -> Vec<String> {
+    comma_separated_values
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+        .collect()
+}

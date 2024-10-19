@@ -2,8 +2,8 @@ use anyhow::{Context, Result};
 use futures::{stream::FuturesUnordered, StreamExt};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tokio::fs::{create_dir_all, File};
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::fs::{create_dir_all, File, OpenOptions};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter};
 use tokio::sync::Mutex;
 
 mod config;
@@ -56,7 +56,7 @@ impl RustPaper {
         let mut lines_stream = reader.lines();
 
         while let Some(line) = lines_stream.next_line().await? {
-            lines.push(line);
+            lines.extend(helper::to_array(&line));
         }
 
         Ok(lines)
@@ -84,6 +84,34 @@ impl RustPaper {
 
         Ok(())
     }
+
+    pub async fn add(&mut self, new_wallpapers: &[String]) -> Result<()> {
+        self.wallpapers
+            .extend(new_wallpapers.iter().flat_map(|s| helper::to_array(s)));
+        self.wallpapers.sort_unstable();
+        self.wallpapers.dedup();
+        update_wallpaper_list(&self.wallpapers, &self.wallpapers_list_file_location).await?;
+        Ok(())
+    }
+}
+
+async fn update_wallpaper_list(list: &Vec<String>, file_path: &Path) -> Result<()> {
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(file_path)
+        .await?;
+
+    let mut writer = BufWriter::new(file);
+
+    for wallpaper in list {
+        writer.write_all(wallpaper.as_bytes()).await?;
+        writer.write_all(b"\n").await?;
+    }
+
+    writer.flush().await?;
+    Ok(())
 }
 
 async fn process_wallpaper(
