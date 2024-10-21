@@ -12,6 +12,8 @@ cargo install rust-paper
 
 ## Configuration
 
+Run `rust-paper` once to initiaze config directory and files.
+
 Configuration files are stored in different locations depending on your operating system:
 
 - **Linux:** `~/.config/rust-paper/config.toml`
@@ -60,11 +62,43 @@ rust-paper <COMMAND>
 ```
 
 #### Commands:
-- `sync`  Sync wallpapers
-- `help`  Print this message or the help of the given subcommand(s)
+
+- `sync` Sync wallpapers
+  Example -
+
+```bash
+rust-paper sync
+```
+
+- `add` Add new wallpapers
+  Example -
+
+```bash
+rust-paper add 7pmgv9,l8o2op
+```
+
+Or
+
+```bash
+rust-paper add 7pmgv9 l8o2op
+```
+
+Or
+
+```bash
+rust-paper add https://wallhaven.cc/w/7pmgv9, https://wallhaven.cc/w/l8o2op
+```
+
+- `help` Print this message or the help of the given subcommand(s)
+  Example -
+
+```bash
+rust-paper help
+```
 
 #### Options:
-- `-h, --help`  Print help
+
+- `-h, --help` Print help
 
 ## Contributing
 
