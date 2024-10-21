@@ -110,3 +110,7 @@ pub fn to_array(comma_separated_values: &str) -> Vec<String> {
         .map(String::from)
         .collect()
 }
+
+pub fn is_url(input: &str) -> bool {
+    url::Url::parse(input).is_ok()
+}

@@ -36,12 +36,11 @@ async fn main() -> Result<(), Error> {
             // Call the sync method
             rust_paper.sync().await?;
         }
-        Command::Add { paths } => {
-            rust_paper.add(&paths).await?;
+        Command::Add { mut paths } => {
+            // Call the add method
+            rust_paper.add(&mut paths).await?;
         }
     }
 
-    // let gg = helper::get_curl_content("https://wallhaven.cc/api/v1/w/3lgk6y").await?;
-    // eprintln!("DEBUGPRINT[1]: main.rs:44: gg={:#?}", gg);
     Ok(())
 }

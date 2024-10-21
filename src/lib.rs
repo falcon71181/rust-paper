@@ -83,7 +83,24 @@ impl RustPaper {
         Ok(())
     }
 
-    pub async fn add(&mut self, new_wallpapers: &[String]) -> Result<()> {
+    pub async fn add(&mut self, new_wallpapers: &mut Vec<String>) -> Result<()> {
+        *new_wallpapers = new_wallpapers
+            .iter()
+            .map(|wall| {
+                if helper::is_url(wall) {
+                    wall.split('/')
+                        .last()
+                        .unwrap_or_default()
+                        .split('?')
+                        .next()
+                        .unwrap_or_default()
+                        .to_string()
+                } else {
+                    wall.to_string()
+                }
+            })
+            .collect();
+
         self.wallpapers
             .extend(new_wallpapers.iter().flat_map(|s| helper::to_array(s)));
         self.wallpapers.sort_unstable();
