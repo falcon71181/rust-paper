@@ -109,7 +109,8 @@ impl RustPaper {
     }
 }
 
-async fn update_wallpaper_list(list: &[String], file_path: &Path) -> Result<()> {
+async fn update_wallpaper_list(list: &[String], file_given: impl AsRef<Path>) -> Result<()> {
+    let file_path = file_given.as_ref();
     let file = OpenOptions::new()
         .write(true)
         .create(true)
@@ -133,8 +134,7 @@ async fn process_wallpaper(
     lock_file: &Arc<Mutex<Option<LockFile>>>,
     wallpaper: &str,
 ) -> Result<()> {
-    let save_location = Path::new(&config.save_location);
-    if let Some(existing_path) = find_existing_image(save_location, wallpaper).await? {
+    if let Some(existing_path) = find_existing_image(&config.save_location, wallpaper).await? {
         if config.integrity {
             if check_integrity(&existing_path, &wallpaper, &lock_file).await? {
                 println!(
@@ -176,7 +176,8 @@ async fn process_wallpaper(
     Ok(())
 }
 
-async fn load_wallpapers(file_path: &Path) -> Result<Vec<String>> {
+async fn load_wallpapers(given_file: impl AsRef<Path>) -> Result<Vec<String>> {
+    let file_path = given_file.as_ref();
     if !file_path.exists() {
         File::create(file_path).await?;
         return Ok(vec![]);
@@ -194,7 +195,11 @@ async fn load_wallpapers(file_path: &Path) -> Result<Vec<String>> {
     Ok(lines)
 }
 
-async fn find_existing_image(save_location: &Path, wallpaper: &str) -> Result<Option<PathBuf>> {
+async fn find_existing_image(
+    save_location_given: impl AsRef<Path>,
+    wallpaper: &str,
+) -> Result<Option<PathBuf>> {
+    let save_location = save_location_given.as_ref();
     let mut entries = tokio::fs::read_dir(save_location).await?;
     while let Some(entry) = entries.next_entry().await? {
         let path = entry.path();
@@ -206,10 +211,11 @@ async fn find_existing_image(save_location: &Path, wallpaper: &str) -> Result<Op
 }
 
 async fn check_integrity(
-    existing_path: &Path,
+    existing_path_given: impl AsRef<Path>,
     wallpaper: &str,
     lock_file: &Arc<Mutex<Option<LockFile>>>,
 ) -> Result<bool> {
+    let existing_path = existing_path_given.as_ref();
     let lock_file = lock_file.lock().await;
     if let Some(ref lock_file) = *lock_file {
         let existing_image_sha256 = helper::calculate_sha256(existing_path).await?;
